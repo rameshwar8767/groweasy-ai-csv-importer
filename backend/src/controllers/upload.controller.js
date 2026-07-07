@@ -1,3 +1,6 @@
+import fs from "fs";
+import { parseCSV } from "../services/csv.service.js";
+
 export const uploadCSV = async (req, res) => {
   try {
     if (!req.file) {
@@ -7,15 +10,18 @@ export const uploadCSV = async (req, res) => {
       });
     }
 
+    const rows = await parseCSV(req.file.path);
+
+    // Delete uploaded file after parsing
+    fs.unlinkSync(req.file.path);
+
     return res.status(200).json({
       success: true,
-      message: "CSV uploaded successfully.",
-      file: {
-        originalName: req.file.originalname,
-        fileName: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-      },
+      message: "CSV parsed successfully.",
+      totalRows: rows.length,
+      columns: rows.length ? Object.keys(rows[0]) : [],
+      preview: rows.slice(0, 10),
+      data: rows,
     });
   } catch (error) {
     return res.status(500).json({
